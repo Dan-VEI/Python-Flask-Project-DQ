@@ -13,22 +13,40 @@ def format_emotion_output(response_text):
     Parses the JSON response from Watsonx, extracts the emotion scores, sorts them
     in descending order, and returns a dictionary of emotions and their scores.
     """
-    data = json.loads(response_text)    # Convert JSON string to Python dictionary
-    
+    import json
+
+    try:
+        data = json.loads(response_text)  # Convert JSON string to Python dictionary
+    except json.JSONDecodeError:
+        print("Error: API returned invalid JSON")
+        return {}
+
     # Extract the emotion scores from Watsonx's output structure.
     if "emotionPredictions" in data and len(data["emotionPredictions"]) > 0:
         emotion_data = data["emotionPredictions"][0].get("emotion", {})
     elif "emotion" in data:
         emotion_data = data["emotion"]
     else:
-        emotion_data = data
-    
+        print("Warning: No emotion data found in response")
+        return {}
+
     # Sort the emotions by score (value) in descending order.
     sorted_emotions = sorted(emotion_data.items(), key=lambda item: item[1], reverse=True)
-    
+
+    # If there are no emotions detected, return an empty dictionary
+    if not sorted_emotions:
+        print("Warning: No emotions detected")
+        return {}
+
     # Build and return a dictionary from the sorted tuples.
     sorted_emotion_dict = {emotion: score for emotion, score in sorted_emotions}
+
+    # ✅ NEW: Determine which emotion has the highest score and add it as 'dominant_emotion'
+    highest_emotion = sorted_emotions[0][0]  # Get the first emotion (highest-scoring one)
+    sorted_emotion_dict['dominant_emotion'] = highest_emotion
+
     return sorted_emotion_dict
+
 
 if __name__ == "__main__":
     # Example text to analyze
